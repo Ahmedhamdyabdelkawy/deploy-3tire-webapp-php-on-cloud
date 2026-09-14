@@ -1,3 +1,4 @@
+Cloud.png
 # SecureVault - Feature-Separated Structure
 
 This version keeps each major feature in its own folder.
