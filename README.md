@@ -1,269 +1,160 @@
-# deploy-3tire-webapp-php-on-cloud
-<img width="1536" height="1024" alt="ChatGPT Image 15 مايو 2026، 03_16_33 م" src="https://github.com/user-attachments/assets/e56b351d-5a24-49ad-9eb5-700201bd51a9" />
+# **SecureVault - FileFortress Dashboard System**
 
+## 🛡️ Overview
+SecureVault is a secure file and user management system built with PHP & MySQL featuring a complete Role-Based Access Control (RBAC) system designed for departmental file isolation and cross-department access requests.
 
----
+## 🔗 Access URLs (Localhost)
 
-# SecureVault — Complete Deployment & AWS Integration Guide
+| **Page**                       | **URL**                                   | **Access**                |
+|----------------------------|-------------------------------------------|---------------------------|
+| **Login**                  | `http://localhost/securevault_/login.php`  | Public                    |
+| **Register**               | `http://localhost/securevault_/register.php`    | Public                    |
+| **Super Admin Dashboard**  | `http://localhost/securevault_/super_admin_dashboard.php` | Super Admin Only        |
+| **Department Admin Dashboard** | `http://localhost/securevault_/admin_dashboard.php` | Department Admin Only     |
+| **User Dashboard**     | `http://localhost/securevault_/dashboard.php`       | User Only                 |
+| **Logout**               | `http://localhost/securevault_/logout.php`          | Authenticated Users       |
 
-> A secure file management web application built with PHP + MariaDB, deployed on AWS Elastic Beanstalk with S3, Lambda, SNS, and Cognito integration.
+## 📊 Default Credentials
 
----
+| **#** | **Username** | **Email**                     | **Role**        | **Password**   |
+|-------|--------------|-------------------------------|-----------------|----------------|
+| 1     | `superadmin` | `superadmin@securevault.local`  | Super Admin     | `Admin@12345`  |
+| 1     | `Mohamed`    |   `mohamed@securevault.local`  | Department Admin     | `Mohamed@12345`  |
+| 2     | `Yousef`     | `yousef@securevault.local`      | User            | `Admin@12345`  |
+| 3     | `Ahmed`      | `ahmed@securevault.local`       | Department Admin| `Admin@12345`  |
 
-## Table of Contents
+> **Unified Security Code:** `SV-ACCESS-2026`
 
-1. [Project Overview](#1-project-overview)
-2. [Architecture](#2-architecture)
-3. [Deployment on Elastic Beanstalk](#3-deployment-on-elastic-beanstalk)
-4. [Database Setup (MariaDB)](#4-database-setup-mariadb)
-5. [AWS SDK & S3 Integration](#5-aws-sdk--s3-integration)
-6. [SNS Setup](#6-sns-setup)
-7. [Lambda Function](#7-lambda-function)
-8. [VPC Gateway Endpoint](#8-vpc-gateway-endpoint)
-9. [S3 Intelligent-Tiering](#9-s3-intelligent-tiering)
-10. [Errors & Solutions](#10-errors--solutions)
+## 📁 Project Structure
+```plaintext
+secureVault/
+├── uploads/                          # File uploads directory
+├── auth.php                          # Authentication & Authorization system
+├── db.php                            # Database connection configuration
+├── layout.php                        # Shared layout templates (Header/Footer)
+├── index.php                         # Main entry point / router
+├── login.php                         # Login page with slide panels
+├── logout.php                        # Session destruction & logout
+├── register.php                      # User self-registration page
+├── dashboard.php                     # Regular user dashboard
+├── admin_dashboard.php               # Department admin dashboard
+├── super_admin_dashboard.php         # Super admin dashboard
+├── upload.php                        # File upload handler
+├── download.php                      # Secure file download handler
+├── preview.php                       # In-browser file preview handler
+├── request_access.php                # Cross-department access request handler
+├── schema.sql                        # Full database schema for fresh installs
+└── migration_update.sql              # Database migration for existing installs
 
----
+# ✨ **Features**
 
-## 1. Project Overview
+### 1. **Three-Tier Role-Based Access Control (RBAC)**
 
-SecureVault is a secure file management system that allows users to upload, manage, and share files within their departments. It supports three user roles:
+| **Role**            | **Permissions**                                                                 |
+|---------------------|---------------------------------------------------------------------------------|
+| `super_admin`       | Full platform control, department & user management, unlimited file access, full audit log visibility |
+| `department_admin`  | Manage department, create users, upload files, review registrations & access requests |
+| `user`              | Upload files to home department, request cross-department access, track request status |
 
-| Role | Permissions |
-|------|-------------|
-| `user` | Upload files, view own files |
-| `department_admin` | Manage department files |
-| `super_admin` | Full control over all departments and users |
+### 2. **Secure File Management**
+- **Secure Upload**: Validates file extensions and type (whitelist).
+- **Encrypted Storage**: Files stored with random hexadecimal names.
+- **Protected Downloads**: Managed by the `download.php` with permission verification.
+- **Inline Preview**: Supports images, PDFs, and various text formats (txt, csv, json, etc.).
 
-**Tech Stack:**
-- Backend: PHP 8
-- Database: MariaDB (local on EC2)
-- Web Server: nginx + php-fpm
-- Hosting: AWS Elastic Beanstalk (Amazon Linux 2023)
-- Storage: AWS S3
-- Notifications: AWS Lambda + SNS
-- Auth (planned): AWS Cognito
+### 3. **Cross-Department Access Requests**
+- Secure requests to other departments, including a review process by department admins.
 
----
+### 4. **Real-Time Notification System**
+- New registrations, access request notifications, failed login alerts, and other important security/approval updates.
 
-## 2. Architecture
+### 5. **Comprehensive Audit Logging**
+- Logs user activity: login attempts, file uploads/downloads, access requests, and more.
 
-```
-User (Browser)
-      │
-      ▼
-SecureVault Web App (Elastic Beanstalk)
-  - nginx + php-fpm
-  - PHP 8
-  - MariaDB (local)
-  - upload.php
-      │
-      ├──► Save file locally (/var/app/current/uploads/)
-      │
-      └──► Upload to S3 (uploadscurevulat) + metadata
-                │
-                ▼
-         S3 Event Notification (PUT)
-                │
-                ▼
-         Lambda Function (securevualt_function)
-          - Reads metadata (email, department, filename)
-          - Publishes to SNS
-                │
-                ▼
-         SNS Topic (securevualt-notification)
-                │
-                ▼
-         Super Admin Email Notification
-```
+### 6. **Security Hardening**
 
-**S3 Buckets:**
-- `uploadscurevulat` — files uploaded here first with metadata
-- Safe bucket — for clean/approved files
-- `unsafesecurevulat` — for unsafe/flagged files
+| **Enhancement**               | **Description**                                                         |
+|-------------------------------|-------------------------------------------------------------------------|
+| SQL Injection Prevention       | All queries use PDO Prepared Statements with parameterized binding.     |
+| CSRF Protection                | Token generation and verification for form submissions.                 |
+| XSS Prevention                 | Ensures output is safely encoded with `htmlspecialchars()`.              |
+| Brute Force Detection          | Alerts admin after 4+ failed login attempts.                            |
+| Secure File Storage            | Random file names for stored files to prevent direct access.           |
+| Password Hashing               | Uses `password_hash()` (bcrypt) for user passwords.                     |
+| Session Regeneration           | Ensures new session ID after every successful login.                    |
 
----
-
-## 3. Deployment on Elastic Beanstalk
-
-The app was deployed on Elastic Beanstalk using Amazon Linux 2023. nginx and php-fpm are pre-configured by Elastic Beanstalk.
-
-**Key config files:**
-```
-/etc/nginx/nginx.conf
-/etc/nginx/conf.d/elasticbeanstalk/php.conf
-```
-
-**Increase file upload size limit in nginx.conf:**
-```nginx
-http {
-    client_max_body_size 20M;
-}
-```
-
-Then restart nginx:
-```bash
-systemctl restart nginx
-```
+### 7. **Interactive Dashboards**
+- **Super Admin**: Activity tracking, threat analysis, network traffic visualization.
+- **Department Admin**: User management, registration & access request reviews.
+- **User**: File access, personal request status tracking.
 
 ---
 
-## 4. Database Setup (MariaDB)
+## 🗄️ **Database Schema**
 
-```bash
-yum install -y mariadb105-server
-systemctl start mariadb
-systemctl enable mariadb
-mysql_secure_installation
-```
+| **Table**          | **Description**                        | **Key Columns**               |
+|--------------------|----------------------------------------|-------------------------------|
+| `departments`      | Organizational departments             | id, name                      |
+| `users`            | All user accounts (3 roles)            | id, username, email, password |
+| `files`            | Uploaded files with ownership          | id, department_id, file_name   |
+| `access_requests`  | Cross-department access requests       | id, user_id, status            |
+| `audit_logs`       | Complete audit trail                   | id, user_id, event_type        |
+| `notifications`    | User & department notifications        | id, user_id, department_id     |
 
-**Fix root authentication for PHP:**
-```sql
-ALTER USER 'root'@'localhost' IDENTIFIED VIA mysql_native_password USING PASSWORD('');
-FLUSH PRIVILEGES;
-```
+# 📝 **Change log**
 
----
+**Version 2.0 (Current)**
 
-## 5. AWS SDK & S3 Integration
+✅ **New**:
+- Notifications table with role-scoped delivery system
+- Metadata column in `access_requests` for detailed request info
+- Pending user status for registration approval workflow
 
-**Install Composer:**
-```bash
-curl -sS https://getcomposer.org/installer | php
-mv composer.phar /usr/local/bin/composer
-```
+✅ **Security**:
+- All SQL queries converted from inline to Prepared Statements
+- Brute force detection (4+ failures triggers admin alerts)
+- File size limit enforcement (10MB max)
 
-**Install AWS SDK:**
-```bash
-cd /var/app/current
-composer require aws/aws-sdk-php
-```
+✅ **Enhanced**:
+- `logNotification()` function with 6 parameters including `$requestId`
+- `error_log()` integration for silent error tracking
+- Extended file preview support (gif, webp, svg, json, xml, html, css, js, md, log)
+- Improved "Preview Unavailable" page with file metadata display
+- Download handler with cache-control headers and output buffer cleaning
 
-**S3 Upload code in upload.php:**
-```php
-try {
-    require_once __DIR__ . '/vendor/autoload.php';
-    $s3Client = new \Aws\S3\S3Client([
-        'version' => 'latest',
-        'region'  => 'us-east-1',
-    ]);
+✅ **Performance**:
+- Strategic database indexes for all frequent query patterns
 
-    $deptName = $pdo->prepare('SELECT name FROM departments WHERE id = :id LIMIT 1');
-    $deptName->execute(['id' => $departmentId]);
-    $department = $deptName->fetch();
+✅ **Data**:
+- 6 default departments seeded on install
 
-    $s3Client->putObject([
-        'Bucket'     => 'uploadscurevulat',
-        'Key'        => $storedName,
-        'SourceFile' => $targetPath,
-        'Metadata'   => [
-            'uploaded-by'   => $user['email'],
-            'department'    => $department['name'] ?? 'Unknown',
-            'original-name' => $originalName,
-        ],
-    ]);
-} catch (\Exception $e) {
-    error_log('S3 Upload failed: ' . $e->getMessage());
-}
-```
+✅ **UI**:
+- Autocomplete attributes on login/register forms
+
+✅ **Robustness**:
+- Department existence validation before registration/upload
+
+✅ **Audit**:
+- Added `auditLog` entries for preview attempts and download denials
 
 ---
 
-## 6. SNS Setup
+🔑 **Important Codes**
 
-1. Go to **AWS Console → SNS → Create Topic** (Standard) → Name: `securevualt-notification`
-2. Create Subscription → Protocol: Email → Endpoint: Super Admin email
-3. Confirm subscription from inbox
-
----
-
-## 7. Lambda Function
-
-**Function code:**
-```python
-import boto3
-
-s3 = boto3.client('s3')
-sns = boto3.client('sns')
-
-SNS_TOPIC_ARN = 'arn:aws:sns:us-east-1:YOUR_ACCOUNT_ID:securevualt-notification'
-
-def lambda_handler(event, context):
-    for record in event['Records']:
-        source_bucket = record['s3']['bucket']['name']
-        file_key = record['s3']['object']['key']
-
-        response = s3.head_object(Bucket=source_bucket, Key=file_key)
-        metadata = response.get('Metadata', {})
-        uploaded_by = metadata.get('uploaded-by', 'Unknown')
-        department = metadata.get('department', 'Unknown')
-        original_name = metadata.get('original-name', file_key)
-
-        sns.publish(
-            TopicArn=SNS_TOPIC_ARN,
-            Subject='New File Uploaded - SecureVault',
-            Message=f'File: {original_name}\nUploaded by: {uploaded_by}\nDepartment: {department}'
-        )
-
-    return {'statusCode': 200}
-```
-
-**IAM Permissions:** Attach `AmazonS3FullAccess` and `AmazonSNSFullAccess` to the Lambda role.
-
-**S3 Trigger:** S3 → uploadscurevulat → Properties → Event Notifications → PUT → Lambda.
+| **Code**         | **Purpose**                                                |
+|------------------|------------------------------------------------------------|
+| `SV-ACCESS-2026` | Security code required for cross-department access requests|
+| `Admin@12345`    | Unified default password for all seeded accounts           |
 
 ---
 
-## 8. VPC Gateway Endpoint
+🔧 **Troubleshooting**
 
-VPC → Endpoints → Create endpoint:
-- Service: `com.amazonaws.us-east-1.s3` (Gateway)
-- Route tables: Select all (private-route, public-subnet, public-route)
-
-Free of charge — eliminates data transfer costs between EC2/Lambda and S3.
-
----
-
-## 9. S3 Intelligent-Tiering
-
-Configured on `uploadscurevulat` to automatically move files to cheaper tiers:
-
-| Tier | Condition | Savings |
-|------|-----------|---------|
-| Frequent Access | Active files | Standard |
-| Infrequent Access | 30 days unused | ~45% |
-| Archive | 90 days unused | ~68% |
-| Deep Archive | 180 days unused | ~95% |
-
----
-
-## 10. Errors & Solutions
-
-### nginx
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `directory index is forbidden` | PHP crash due to DB connection failure | Fix database connection |
-| `413 Request Entity Too Large` | nginx default 1MB limit | Add `client_max_body_size 20M;` in nginx.conf |
-
-### Database
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `SQLSTATE[HY000] [2002] Connection refused` | MariaDB not installed | `yum install -y mariadb105-server` |
-| `SQLSTATE[HY000] [1698] Access denied` | unix_socket auth blocks PHP | `ALTER USER 'root'@'localhost' IDENTIFIED VIA mysql_native_password` |
-
-### PHP
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `vendor/autoload.php not found` | SDK installed in wrong directory | Run `composer require aws/aws-sdk-php` inside `/var/app/current/` |
-| `PHP Parse error in upload.php line 91` | Bash command pasted inside PHP file | Rewrite file using `cat > upload.php << 'EOF'` |
-
-### Lambda
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `Runtime.UserCodeSyntaxError line 33` | TopicArn missing quotes | Wrap ARN in single quotes |
-| `403 Forbidden on HeadObject` | Lambda missing S3 permissions | Attach `AmazonS3FullAccess` to Lambda role |
-| `404 Not Found on HeadObject` | Test used non-existent file key | Use real file key from S3 bucket |
+| **Issue**                          | **Solution**                                                               |
+|------------------------------------|---------------------------------------------------------------------------|
+| Database connection failed         | Verify MySQL is running and `db.php` credentials match your setup         |
+| File upload fails                  | Check `uploads/` folder exists and has write permissions (755/777)         |
+| Login redirects to login page      | Clear browser cookies/session and try again                               |
+| CSRF token invalid                 | Refresh the page to generate a new token                                  |
+| Cannot preview/download file       | Ensure file exists in `uploads/` directory and you have access rights     |
+| Notifications not appearing        | Run `migration_update.sql` to create the notifications table              |
