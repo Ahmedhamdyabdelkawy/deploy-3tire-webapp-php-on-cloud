@@ -1,3 +1,5 @@
+![Uploading image.png…]()
+
 # **SecureVault - FileFortress Dashboard System**
 
 ## 🛡️ Overview
